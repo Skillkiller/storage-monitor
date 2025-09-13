@@ -11,3 +11,6 @@ hosts:
       - name: "tmp"
         path: "/tmp"
         inode-count: false
+  recursive_watched_dirs:
+    - path: "/home"
+      max-depth: 1
