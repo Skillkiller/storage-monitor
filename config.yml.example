@@ -4,8 +4,10 @@ hosts:
     port: 2222
     user: "dev"
     password: "password"
+    filesystem_metrics: false
     watched_dirs:
       - name: "logs"
-        path: "/var/log"
+        path: "/tmp"
       - name: "tmp"
         path: "/tmp"
+        inode-count: false
