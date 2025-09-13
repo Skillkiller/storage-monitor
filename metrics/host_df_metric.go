@@ -35,7 +35,7 @@ type FileSystemInfo struct {
 // ParseDfOutput parst einen df-Output (mehrere Zeilen) und gibt eine Liste der FileSystemInfo zurück.
 func parseDfOutput(dfOutput string) ([]FileSystemInfo, error) {
 	lines := strings.Split(strings.TrimSpace(dfOutput), "\n")
-	var result []FileSystemInfo
+	result := make([]FileSystemInfo, 0)
 
 	for i, line := range lines {
 		// Überspringe die Header-Zeile
