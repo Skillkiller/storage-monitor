@@ -30,72 +30,79 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 	errorCount := 0
 
 	for _, dirConfig := range c.hostConfig.WatchedDirs {
-		size, err := metrics.GetDirSize(connection, dirConfig)
-		if err == nil {
-			ch <- prometheus.MustNewConstMetric(
-				prometheus.NewDesc(
-					"folder_size",
-					"Folder size in bytes",
-					[]string{"host", "name"},
-					nil,
-				),
-				prometheus.GaugeValue,
-				float64(size),
-				c.hostConfig.Host,
-				dirConfig.Name)
-		} else {
-			errorCount++
-			fmt.Println(err)
+		if *dirConfig.FolderSize {
+			size, err := metrics.GetDirSize(connection, dirConfig)
+			if err == nil {
+				ch <- prometheus.MustNewConstMetric(
+					prometheus.NewDesc(
+						"folder_size",
+						"Folder size in bytes",
+						[]string{"host", "name"},
+						nil,
+					),
+					prometheus.GaugeValue,
+					float64(size),
+					c.hostConfig.Host,
+					dirConfig.Name)
+			} else {
+				errorCount++
+				fmt.Println(err)
+			}
 		}
 
-		mtime, cTime, err := metrics.GetLastModifiedMetric(connection, dirConfig)
-		if err != nil {
-			errorCount++
-			fmt.Println(err)
-		} else {
-			ch <- prometheus.MustNewConstMetric(
-				prometheus.NewDesc(
-					"folder_last_modified_mtime",
-					"time of last data modification",
-					[]string{"host", "name"},
-					nil,
-				),
-				prometheus.GaugeValue,
-				float64(mtime),
-				c.hostConfig.Host,
-				dirConfig.Name,
-			)
-			ch <- prometheus.MustNewConstMetric(
-				prometheus.NewDesc(
-					"folder_last_modified_ctime",
-					"time of last status change",
-					[]string{"host", "name"},
-					nil,
-				),
-				prometheus.GaugeValue,
-				float64(cTime),
-				c.hostConfig.Host,
-				dirConfig.Name,
-			)
+		if *dirConfig.LastModified {
+			mtime, cTime, err := metrics.GetLastModifiedMetric(connection, dirConfig)
+			if err != nil {
+				errorCount++
+				fmt.Println(err)
+			} else {
+				ch <- prometheus.MustNewConstMetric(
+					prometheus.NewDesc(
+						"folder_last_modified_mtime",
+						"time of last data modification",
+						[]string{"host", "name"},
+						nil,
+					),
+					prometheus.GaugeValue,
+					float64(mtime),
+					c.hostConfig.Host,
+					dirConfig.Name,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					prometheus.NewDesc(
+						"folder_last_modified_ctime",
+						"time of last status change",
+						[]string{"host", "name"},
+						nil,
+					),
+					prometheus.GaugeValue,
+					float64(cTime),
+					c.hostConfig.Host,
+					dirConfig.Name,
+				)
 
+			}
 		}
-		inodeCount, err := metrics.GetInodeCount(connection, dirConfig)
-		if err != nil {
-			errorCount++
-			fmt.Println(err)
-		} else {
-			ch <- prometheus.MustNewConstMetric(
-				prometheus.NewDesc(
-					"folder_inode_count",
-					"Number of inodes",
-					[]string{"host", "name"},
-					nil,
-				),
-				prometheus.GaugeValue,
-				float64(inodeCount),
-				c.hostConfig.Host,
-				dirConfig.Name,
-			)
+
+		if *dirConfig.InodeCount {
+			inodeCount, err := metrics.GetInodeCount(connection, dirConfig)
+			if err != nil {
+				errorCount++
+				fmt.Println(err)
+			} else {
+				ch <- prometheus.MustNewConstMetric(
+					prometheus.NewDesc(
+						"folder_inode_count",
+						"Number of inodes",
+						[]string{"host", "name"},
+						nil,
+					),
+					prometheus.GaugeValue,
+					float64(inodeCount),
+					c.hostConfig.Host,
+					dirConfig.Name,
+				)
+			}
 		}
 	}
 
