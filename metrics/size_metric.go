@@ -13,7 +13,7 @@ import (
 func GetDirSize(client *ssh.Client, dirConfig config.WatchedDir) (uint64, error) {
 	result, err := ssh2.ExecuteSshCommand(client, "du -sb "+dirConfig.Path)
 	if err != nil {
-		return 0, fmt.Errorf("can't execute du: %w", err)
+		return 0, fmt.Errorf("can't execute du: %w - result: %s", err, string(result))
 	}
 
 	folderSize, err := parseDuOutput(string(result))

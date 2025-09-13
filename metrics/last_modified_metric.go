@@ -13,7 +13,7 @@ import (
 func GetLastModifiedMetric(client *ssh.Client, dirConfig config.WatchedDir) (mTime uint64, cTime uint64, err error) {
 	result, err := ssh2.ExecuteSshCommand(client, "stat -c '%Y;%Z' "+dirConfig.Path)
 	if err != nil {
-		return 0, 0, fmt.Errorf("can't execute stat: %w", err)
+		return 0, 0, fmt.Errorf("can't execute stat: %w - result: %s", err, string(result))
 	}
 
 	mTime, cTime, err = parseStatOutput(string(result))

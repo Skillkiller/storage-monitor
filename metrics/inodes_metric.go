@@ -11,7 +11,7 @@ import (
 func GetInodeCount(client *ssh.Client, dirConfig config.WatchedDir) (uint64, error) {
 	result, err := ssh2.ExecuteSshCommand(client, "du -s --inodes "+dirConfig.Path)
 	if err != nil {
-		return 0, fmt.Errorf("can't execute du -s --inodes: %w", err)
+		return 0, fmt.Errorf("can't execute du -s --inodes: %w - result: %s", err, string(result))
 	}
 
 	folderSize, err := parseDuOutput(string(result))

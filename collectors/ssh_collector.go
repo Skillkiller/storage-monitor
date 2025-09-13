@@ -45,11 +45,13 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 				dirConfig.Name)
 		} else {
 			errorCount++
+			fmt.Println(err)
 		}
 
 		mtime, cTime, err := metrics.GetLastModifiedMetric(connection, dirConfig)
 		if err != nil {
 			errorCount++
+			fmt.Println(err)
 		} else {
 			ch <- prometheus.MustNewConstMetric(
 				prometheus.NewDesc(
@@ -80,6 +82,7 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 		inodeCount, err := metrics.GetInodeCount(connection, dirConfig)
 		if err != nil {
 			errorCount++
+			fmt.Println(err)
 		} else {
 			ch <- prometheus.MustNewConstMetric(
 				prometheus.NewDesc(
