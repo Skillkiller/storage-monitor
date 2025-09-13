@@ -99,6 +99,57 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
+	fileSystemInfos, err := metrics.GetHostDf(connection)
+	if err != nil {
+		errorCount++
+		fmt.Println(err)
+	} else {
+		for _, fsInfo := range fileSystemInfos {
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"filesystem_total_blocks",
+					"Total number of blocks in the filesystem",
+					[]string{"host", "filesystem", "mount"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				float64(fsInfo.Blocks),
+				c.hostConfig.Host,
+				fsInfo.Filesystem,
+				fsInfo.MountedOn,
+			)
+
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"filesystem_used_blocks",
+					"Number of blocks currently used in the filesystem",
+					[]string{"host", "filesystem", "mount"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				float64(fsInfo.Used),
+				c.hostConfig.Host,
+				fsInfo.Filesystem,
+				fsInfo.MountedOn,
+			)
+
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"filesystem_available_blocks",
+					"Number of blocks still available in the filesystem",
+					[]string{"host", "filesystem", "mount"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				float64(fsInfo.Available),
+				c.hostConfig.Host,
+				fsInfo.Filesystem,
+				fsInfo.MountedOn,
+			)
+
+		}
+	}
+
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			"error_status",
