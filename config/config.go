@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/spf13/viper"
 )
 
@@ -14,12 +15,13 @@ type WatchedDir struct {
 }
 
 type SshHostConfig struct {
-	Host        string       `mapstructure:"host"`
-	Port        int          `mapstructure:"port"`
-	User        string       `mapstructure:"user"`
-	Password    string       `mapstructure:"password"`
-	PrivateKey  string       `mapstructure:"privateKey"`
-	WatchedDirs []WatchedDir `mapstructure:"watched_dirs"`
+	Host              string       `mapstructure:"host"`
+	Port              int          `mapstructure:"port"`
+	User              string       `mapstructure:"user"`
+	Password          string       `mapstructure:"password"`
+	PrivateKey        string       `mapstructure:"privateKey"`
+	FilesystemMetrics *bool        `mapstructure:"filesystem_metrics"`
+	WatchedDirs       []WatchedDir `mapstructure:"watched_dirs"`
 }
 
 type Config struct {
@@ -76,6 +78,11 @@ func (c *Config) validateAndSetDefaultsSshHostConfig() error {
 			if err := wd.validateAndSetDefaultsWatchedDir(); err != nil {
 				return fmt.Errorf("host %s, WatchedDir %s: %w", name, wd.Name, err)
 			}
+		}
+
+		if host.FilesystemMetrics == nil {
+			b := true
+			host.FilesystemMetrics = &b
 		}
 
 		c.Hosts[name] = host
