@@ -14,14 +14,23 @@ type WatchedDir struct {
 	LastModified *bool  `mapstructure:"last-modified"`
 }
 
+type RecursiveWatchedDirs struct {
+	MaxDepth     int    `mapstructure:"max-depth"`
+	Path         string `mapstructure:"path"`
+	InodeCount   *bool  `mapstructure:"inode-count"`
+	FolderSize   *bool  `mapstructure:"folder-size"`
+	LastModified *bool  `mapstructure:"last-modified"`
+}
+
 type SshHostConfig struct {
-	Host              string       `mapstructure:"host"`
-	Port              int          `mapstructure:"port"`
-	User              string       `mapstructure:"user"`
-	Password          string       `mapstructure:"password"`
-	PrivateKey        string       `mapstructure:"privateKey"`
-	FilesystemMetrics *bool        `mapstructure:"filesystem_metrics"`
-	WatchedDirs       []WatchedDir `mapstructure:"watched_dirs"`
+	Host              string                 `mapstructure:"host"`
+	Port              int                    `mapstructure:"port"`
+	User              string                 `mapstructure:"user"`
+	Password          string                 `mapstructure:"password"`
+	PrivateKey        string                 `mapstructure:"privateKey"`
+	FilesystemMetrics *bool                  `mapstructure:"filesystem_metrics"`
+	WatchedDirs       []WatchedDir           `mapstructure:"watched_dirs"`
+	RecursiveDirs     []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
 }
 
 type Config struct {
@@ -80,6 +89,13 @@ func (c *Config) validateAndSetDefaultsSshHostConfig() error {
 			}
 		}
 
+		for i := range host.RecursiveDirs {
+			wd := &host.RecursiveDirs[i]
+			if err := wd.validateAndSetDefaultsRecursiveWatchedDir(); err != nil {
+				return fmt.Errorf("host %s, RecursiveWatchedDir %s: %w", name, wd.Path, err)
+			}
+		}
+
 		if host.FilesystemMetrics == nil {
 			b := true
 			host.FilesystemMetrics = &b
@@ -96,6 +112,28 @@ func (wd *WatchedDir) validateAndSetDefaultsWatchedDir() error {
 	}
 	if wd.Name == "" {
 		wd.Name = wd.Path
+	}
+
+	if wd.InodeCount == nil {
+		b := true
+		wd.InodeCount = &b
+	}
+
+	if wd.FolderSize == nil {
+		b := true
+		wd.FolderSize = &b
+	}
+
+	if wd.LastModified == nil {
+		b := true
+		wd.LastModified = &b
+	}
+	return nil
+}
+
+func (wd *RecursiveWatchedDirs) validateAndSetDefaultsRecursiveWatchedDir() error {
+	if wd.Path == "" {
+		return fmt.Errorf("pfad darf nicht leer sein")
 	}
 
 	if wd.InodeCount == nil {

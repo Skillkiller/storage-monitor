@@ -5,8 +5,10 @@ import (
 	"ssh-storage-monitor/config"
 	"ssh-storage-monitor/metrics"
 	"ssh-storage-monitor/ssh"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	ssh2 "golang.org/x/crypto/ssh"
 )
 
 type SshCollector struct {
@@ -29,7 +31,16 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 
 	errorCount := 0
 
-	for _, dirConfig := range c.hostConfig.WatchedDirs {
+	recursiveDirs := []config.WatchedDir{}
+
+	for _, dirConfig := range c.hostConfig.RecursiveDirs {
+		directories := getRecursiveDirectories(connection, dirConfig)
+		recursiveDirs = append(recursiveDirs, directories...)
+	}
+
+	allWatchedDirs := append(recursiveDirs, c.hostConfig.WatchedDirs...)
+
+	for _, dirConfig := range allWatchedDirs {
 		if *dirConfig.FolderSize {
 			size, err := metrics.GetDirSize(connection, dirConfig)
 			if err == nil {
@@ -169,4 +180,57 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 		prometheus.GaugeValue,
 		float64(errorCount),
 		c.hostConfig.Host)
+}
+
+func getRecursiveDirectories(client *ssh2.Client, dirConfig config.RecursiveWatchedDirs) []config.WatchedDir {
+	maxDepth := dirConfig.MaxDepth
+	allDirs := []string{dirConfig.Path}
+	queue := []string{dirConfig.Path}
+
+	for depth := 1; depth <= maxDepth && len(queue) > 0; depth++ {
+		var next []string
+		for _, dir := range queue {
+			dirs, err := listDirs(client, dir)
+			if err != nil {
+				fmt.Println("Error:", err)
+				continue
+			}
+			allDirs = append(allDirs, dirs...)
+			next = append(next, dirs...)
+		}
+		queue = next
+	}
+
+	var watchedDirs []config.WatchedDir
+	for _, dir := range allDirs {
+		watchedDirs = append(watchedDirs, config.WatchedDir{
+			Name:         dir,
+			Path:         dir,
+			InodeCount:   dirConfig.InodeCount,
+			FolderSize:   dirConfig.FolderSize,
+			LastModified: dirConfig.LastModified,
+		})
+	}
+	return watchedDirs
+}
+
+func listDirs(client *ssh2.Client, path string) ([]string, error) {
+	output, err := ssh.ExecuteSshCommand(client, "ls -l "+path)
+	if err != nil {
+		return nil, err
+	}
+
+	var dirs []string
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) < 9 {
+			continue
+		}
+		// Zeilen von `ls -l` die mit "d" anfangen sind Verzeichnisse
+		if strings.HasPrefix(fields[0], "d") {
+			dirs = append(dirs, path+"/"+fields[len(fields)-1])
+		}
+	}
+	return dirs, nil
 }
