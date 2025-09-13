@@ -3,4 +3,9 @@ hosts:
     host: "localhost"
     port: 2222
     user: "dev"
-    password: "passwort"
+    password: "password"
+    watched_dirs:
+      - name: "logs"
+        path: "/var/log"
+      - name: "tmp"
+        path: "/tmp"

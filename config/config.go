@@ -5,12 +5,21 @@ import (
 	"github.com/spf13/viper"
 )
 
+type WatchedDir struct {
+	Name         string `mapstructure:"name"`
+	Path         string `mapstructure:"path"`
+	InodeCount   *bool  `mapstructure:"inode-count"`
+	FolderSize   *bool  `mapstructure:"folder-size"`
+	LastModified *bool  `mapstructure:"last-modified"`
+}
+
 type SshHostConfig struct {
-	Host       string
-	Port       int
-	User       string
-	Password   string
-	PrivateKey string
+	Host        string       `mapstructure:"host"`
+	Port        int          `mapstructure:"port"`
+	User        string       `mapstructure:"user"`
+	Password    string       `mapstructure:"password"`
+	PrivateKey  string       `mapstructure:"privateKey"`
+	WatchedDirs []WatchedDir `mapstructure:"watched_dirs"`
 }
 
 type Config struct {
@@ -37,14 +46,14 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("konnte Config nicht mappen: %w", err)
 	}
 
-	if err := cfg.ValidateAndSetDefaultsSshHostConfig(); err != nil {
+	if err := cfg.validateAndSetDefaultsSshHostConfig(); err != nil {
 		return nil, err
 	}
 
 	return &cfg, nil
 }
 
-func (c *Config) ValidateAndSetDefaultsSshHostConfig() error {
+func (c *Config) validateAndSetDefaultsSshHostConfig() error {
 	for name, host := range c.Hosts {
 		// Default Port
 		if host.Port == 0 {
@@ -61,7 +70,40 @@ func (c *Config) ValidateAndSetDefaultsSshHostConfig() error {
 		if host.Password == "" && host.PrivateKey == "" {
 			return fmt.Errorf("entweder Password oder PrivateKey muss gesetzt sein für Host %s", name)
 		}
+
+		for i := range host.WatchedDirs {
+			wd := &host.WatchedDirs[i]
+			if err := wd.validateAndSetDefaultsWatchedDir(); err != nil {
+				return fmt.Errorf("host %s, WatchedDir %s: %w", name, wd.Name, err)
+			}
+		}
+
 		c.Hosts[name] = host
+	}
+	return nil
+}
+
+func (wd *WatchedDir) validateAndSetDefaultsWatchedDir() error {
+	if wd.Path == "" {
+		return fmt.Errorf("pfad darf nicht leer sein")
+	}
+	if wd.Name == "" {
+		wd.Name = wd.Path
+	}
+
+	if wd.InodeCount == nil {
+		b := true
+		wd.InodeCount = &b
+	}
+
+	if wd.FolderSize == nil {
+		b := true
+		wd.FolderSize = &b
+	}
+
+	if wd.LastModified == nil {
+		b := true
+		wd.LastModified = &b
 	}
 	return nil
 }

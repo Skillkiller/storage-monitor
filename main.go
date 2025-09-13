@@ -2,20 +2,32 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"ssh-storage-monitor/config"
+	"ssh-storage-monitor/ssh"
 )
 
-//TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
-// the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
-
 func main() {
-	//TIP <p>Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined text
-	// to see how GoLand suggests fixing the warning.</p><p>Alternatively, if available, click the lightbulb to view possible fixes.</p>
-	s := "gopher"
-	fmt.Println("Hello and welcome, %s!", s)
+	cfg, err := config.Load()
 
-	for i := 1; i <= 5; i++ {
-		//TIP <p>To start your debugging session, right-click your code in the editor and select the Debug option.</p> <p>We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-		// for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.</p>
-		fmt.Println("i =", 100/i)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%+v\n", cfg.Hosts)
+
+	for _, host := range cfg.Hosts {
+		for _, wd := range host.WatchedDirs {
+			fmt.Printf("%+v\n", wd)
+		}
+	}
+
+	for _, host := range cfg.Hosts {
+		fmt.Printf("%+v\n", host)
+		connection := ssh.GetSshConnection(host)
+
+		output, _ := ssh.ExecuteSshCommand(connection, "df -h")
+		fmt.Println(string(output))
+		connection.Close()
 	}
 }
