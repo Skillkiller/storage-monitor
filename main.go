@@ -3,8 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"ssh-storage-monitor/collectors"
 	"ssh-storage-monitor/config"
-	"ssh-storage-monitor/ssh"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -17,17 +21,9 @@ func main() {
 	fmt.Printf("%+v\n", cfg.Hosts)
 
 	for _, host := range cfg.Hosts {
-		for _, wd := range host.WatchedDirs {
-			fmt.Printf("%+v\n", wd)
-		}
+		prometheus.MustRegister(collectors.NewSshCollector(host))
 	}
 
-	for _, host := range cfg.Hosts {
-		fmt.Printf("%+v\n", host)
-		connection := ssh.GetSshConnection(host)
-
-		output, _ := ssh.ExecuteSshCommand(connection, "df -h")
-		fmt.Println(string(output))
-		connection.Close()
-	}
+	http.Handle("/metrics", promhttp.Handler())
+	http.ListenAndServe(":2112", nil)
 }
