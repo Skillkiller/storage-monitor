@@ -12,16 +12,40 @@ import (
 )
 
 type SshCollector struct {
-	hostConfig config.SshHostConfig
+	hostConfig            config.SshHostConfig
+	folderSizeDesc        *prometheus.Desc
+	lastModifiedMtimeDesc *prometheus.Desc
+	lastModifiedCtimeDesc *prometheus.Desc
+	inodeCountDesc        *prometheus.Desc
+	fsTotalBlocksDesc     *prometheus.Desc
+	fsUsedBlocksDesc      *prometheus.Desc
+	fsAvailableBlocksDesc *prometheus.Desc
+	errorStatusDesc       *prometheus.Desc
 }
 
 func NewSshCollector(hostConfig config.SshHostConfig) *SshCollector {
 	return &SshCollector{
-		hostConfig: hostConfig,
+		hostConfig:            hostConfig,
+		folderSizeDesc:        prometheus.NewDesc("folder_size", "Folder size in bytes", []string{"target_name", "folder_name"}, nil),
+		lastModifiedMtimeDesc: prometheus.NewDesc("folder_last_modified_mtime", "time of last data modification", []string{"target_name", "folder_name"}, nil),
+		lastModifiedCtimeDesc: prometheus.NewDesc("folder_last_modified_ctime", "time of last status change", []string{"target_name", "folder_name"}, nil),
+		inodeCountDesc:        prometheus.NewDesc("folder_inode_count", "Number of inodes", []string{"target_name", "folder_name"}, nil),
+		fsTotalBlocksDesc:     prometheus.NewDesc("filesystem_total_blocks", "Total number of blocks in the filesystem", []string{"target_name", "filesystem", "mount"}, nil),
+		fsUsedBlocksDesc:      prometheus.NewDesc("filesystem_used_blocks", "Number of blocks currently used in the filesystem", []string{"target_name", "filesystem", "mount"}, nil),
+		fsAvailableBlocksDesc: prometheus.NewDesc("filesystem_available_blocks", "Number of blocks still available in the filesystem", []string{"target_name", "filesystem", "mount"}, nil),
+		errorStatusDesc:       prometheus.NewDesc("error_status", "Indicates if there was an error while collecting metrics", []string{"target_name"}, nil),
 	}
 }
 
 func (c *SshCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.folderSizeDesc
+	ch <- c.lastModifiedMtimeDesc
+	ch <- c.lastModifiedCtimeDesc
+	ch <- c.inodeCountDesc
+	ch <- c.fsTotalBlocksDesc
+	ch <- c.fsUsedBlocksDesc
+	ch <- c.fsAvailableBlocksDesc
+	ch <- c.errorStatusDesc
 }
 
 func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
@@ -45,12 +69,7 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 			size, err := metrics.GetDirSize(connection, dirConfig)
 			if err == nil {
 				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						"folder_size",
-						"Folder size in bytes",
-						[]string{"target_name", "folder_name"},
-						nil,
-					),
+					c.folderSizeDesc,
 					prometheus.GaugeValue,
 					float64(size),
 					c.hostConfig.Name,
@@ -68,24 +87,14 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 				fmt.Println(err)
 			} else {
 				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						"folder_last_modified_mtime",
-						"time of last data modification",
-						[]string{"target_name", "folder_name"},
-						nil,
-					),
+					c.lastModifiedMtimeDesc,
 					prometheus.GaugeValue,
 					float64(mtime),
 					c.hostConfig.Name,
 					dirConfig.Name,
 				)
 				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						"folder_last_modified_ctime",
-						"time of last status change",
-						[]string{"target_name", "folder_name"},
-						nil,
-					),
+					c.lastModifiedCtimeDesc,
 					prometheus.GaugeValue,
 					float64(cTime),
 					c.hostConfig.Name,
@@ -102,12 +111,7 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 				fmt.Println(err)
 			} else {
 				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						"folder_inode_count",
-						"Number of inodes",
-						[]string{"target_name", "folder_name"},
-						nil,
-					),
+					c.inodeCountDesc,
 					prometheus.GaugeValue,
 					float64(inodeCount),
 					c.hostConfig.Name,
@@ -125,12 +129,7 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 		} else {
 			for _, fsInfo := range fileSystemInfos {
 				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						"filesystem_total_blocks",
-						"Total number of blocks in the filesystem",
-						[]string{"target_name", "filesystem", "mount"},
-						nil,
-					),
+					c.fsTotalBlocksDesc,
 					prometheus.GaugeValue,
 					float64(fsInfo.Blocks),
 					c.hostConfig.Name,
@@ -139,12 +138,7 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 				)
 
 				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						"filesystem_used_blocks",
-						"Number of blocks currently used in the filesystem",
-						[]string{"target_name", "filesystem", "mount"},
-						nil,
-					),
+					c.fsUsedBlocksDesc,
 					prometheus.GaugeValue,
 					float64(fsInfo.Used),
 					c.hostConfig.Name,
@@ -153,12 +147,7 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 				)
 
 				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						"filesystem_available_blocks",
-						"Number of blocks still available in the filesystem",
-						[]string{"target_name", "filesystem", "mount"},
-						nil,
-					),
+					c.fsAvailableBlocksDesc,
 					prometheus.GaugeValue,
 					float64(fsInfo.Available),
 					c.hostConfig.Name,
@@ -171,12 +160,7 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc(
-			"error_status",
-			"Indicates if there was an error while collecting metrics",
-			[]string{"target_name"},
-			nil,
-		),
+		c.errorStatusDesc,
 		prometheus.GaugeValue,
 		float64(errorCount),
 		c.hostConfig.Name)
