@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"ssh-storage-monitor/collectors"
@@ -18,7 +17,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%+v\n", cfg.Hosts)
+	if len(cfg.Hosts) == 0 {
+		log.Fatal("Keine Hosts konfiguriert")
+	}
 
 	for _, host := range cfg.Hosts {
 		prometheus.MustRegister(collectors.NewSshCollector(host))
