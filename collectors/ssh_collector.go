@@ -46,6 +46,36 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 		} else {
 			errorCount++
 		}
+
+		mtime, cTime, err := metrics.GetLastModifiedMetric(connection, dirConfig)
+		if err != nil {
+			errorCount++
+		} else {
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"folder_last_modified_mtime",
+					"time of last data modification",
+					[]string{"host", "name"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				float64(mtime),
+				c.hostConfig.Host,
+				dirConfig.Name,
+			)
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"folder_last_modified_ctime",
+					"time of last status change",
+					[]string{"host", "name"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				float64(cTime),
+				c.hostConfig.Host,
+				dirConfig.Name,
+			)
+		}
 	}
 
 	ch <- prometheus.MustNewConstMetric(
