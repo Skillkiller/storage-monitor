@@ -75,6 +75,24 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 				c.hostConfig.Host,
 				dirConfig.Name,
 			)
+
+		}
+		inodeCount, err := metrics.GetInodeCount(connection, dirConfig)
+		if err != nil {
+			errorCount++
+		} else {
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"folder_inode_count",
+					"Number of inodes",
+					[]string{"host", "name"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				float64(inodeCount),
+				c.hostConfig.Host,
+				dirConfig.Name,
+			)
 		}
 	}
 
