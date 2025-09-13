@@ -48,12 +48,12 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 					prometheus.NewDesc(
 						"folder_size",
 						"Folder size in bytes",
-						[]string{"host", "name"},
+						[]string{"target_name", "name"},
 						nil,
 					),
 					prometheus.GaugeValue,
 					float64(size),
-					c.hostConfig.Host,
+					c.hostConfig.Name,
 					dirConfig.Name)
 			} else {
 				errorCount++
@@ -71,24 +71,24 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 					prometheus.NewDesc(
 						"folder_last_modified_mtime",
 						"time of last data modification",
-						[]string{"host", "name"},
+						[]string{"target_name", "name"},
 						nil,
 					),
 					prometheus.GaugeValue,
 					float64(mtime),
-					c.hostConfig.Host,
+					c.hostConfig.Name,
 					dirConfig.Name,
 				)
 				ch <- prometheus.MustNewConstMetric(
 					prometheus.NewDesc(
 						"folder_last_modified_ctime",
 						"time of last status change",
-						[]string{"host", "name"},
+						[]string{"target_name", "name"},
 						nil,
 					),
 					prometheus.GaugeValue,
 					float64(cTime),
-					c.hostConfig.Host,
+					c.hostConfig.Name,
 					dirConfig.Name,
 				)
 
@@ -105,12 +105,12 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 					prometheus.NewDesc(
 						"folder_inode_count",
 						"Number of inodes",
-						[]string{"host", "name"},
+						[]string{"target_name", "name"},
 						nil,
 					),
 					prometheus.GaugeValue,
 					float64(inodeCount),
-					c.hostConfig.Host,
+					c.hostConfig.Name,
 					dirConfig.Name,
 				)
 			}
@@ -128,12 +128,12 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 					prometheus.NewDesc(
 						"filesystem_total_blocks",
 						"Total number of blocks in the filesystem",
-						[]string{"host", "filesystem", "mount"},
+						[]string{"target_name", "filesystem", "mount"},
 						nil,
 					),
 					prometheus.GaugeValue,
 					float64(fsInfo.Blocks),
-					c.hostConfig.Host,
+					c.hostConfig.Name,
 					fsInfo.Filesystem,
 					fsInfo.MountedOn,
 				)
@@ -142,12 +142,12 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 					prometheus.NewDesc(
 						"filesystem_used_blocks",
 						"Number of blocks currently used in the filesystem",
-						[]string{"host", "filesystem", "mount"},
+						[]string{"target_name", "filesystem", "mount"},
 						nil,
 					),
 					prometheus.GaugeValue,
 					float64(fsInfo.Used),
-					c.hostConfig.Host,
+					c.hostConfig.Name,
 					fsInfo.Filesystem,
 					fsInfo.MountedOn,
 				)
@@ -156,12 +156,12 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 					prometheus.NewDesc(
 						"filesystem_available_blocks",
 						"Number of blocks still available in the filesystem",
-						[]string{"host", "filesystem", "mount"},
+						[]string{"target_name", "filesystem", "mount"},
 						nil,
 					),
 					prometheus.GaugeValue,
 					float64(fsInfo.Available),
-					c.hostConfig.Host,
+					c.hostConfig.Name,
 					fsInfo.Filesystem,
 					fsInfo.MountedOn,
 				)
@@ -174,12 +174,12 @@ func (c *SshCollector) Collect(ch chan<- prometheus.Metric) {
 		prometheus.NewDesc(
 			"error_status",
 			"Indicates if there was an error while collecting metrics",
-			[]string{"host"},
+			[]string{"target_name"},
 			nil,
 		),
 		prometheus.GaugeValue,
 		float64(errorCount),
-		c.hostConfig.Host)
+		c.hostConfig.Name)
 }
 
 func getRecursiveDirectories(client *ssh2.Client, dirConfig config.RecursiveWatchedDirs) []config.WatchedDir {

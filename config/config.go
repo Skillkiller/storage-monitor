@@ -23,6 +23,7 @@ type RecursiveWatchedDirs struct {
 }
 
 type SshHostConfig struct {
+	Name              string                 `mapstructure:"name"`
 	Host              string                 `mapstructure:"host"`
 	Port              int                    `mapstructure:"port"`
 	User              string                 `mapstructure:"user"`
@@ -34,7 +35,7 @@ type SshHostConfig struct {
 }
 
 type Config struct {
-	Hosts map[string]SshHostConfig `mapstructure:"hosts"`
+	Hosts []SshHostConfig `mapstructure:"hosts"`
 }
 
 func Load() (*Config, error) {
@@ -65,34 +66,38 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) validateAndSetDefaultsSshHostConfig() error {
-	for name, host := range c.Hosts {
+	for index, host := range c.Hosts {
+		if host.Name == "" {
+			return fmt.Errorf("name must be set on host config")
+		}
+
 		// Default Port
 		if host.Port == 0 {
 			host.Port = 22
 		}
 
 		if host.Host == "" {
-			return fmt.Errorf("ssh.host für Host %s fehlt", name)
+			return fmt.Errorf("ssh.host für Host %s fehlt", host.Name)
 		}
 		if host.User == "" {
-			return fmt.Errorf("ssh.user für Host %s fehlt", name)
+			return fmt.Errorf("ssh.user für Host %s fehlt", host.Name)
 		}
 
 		if host.Password == "" && host.PrivateKey == "" {
-			return fmt.Errorf("entweder Password oder PrivateKey muss gesetzt sein für Host %s", name)
+			return fmt.Errorf("entweder Password oder PrivateKey muss gesetzt sein für Host %s", host.Name)
 		}
 
 		for i := range host.WatchedDirs {
 			wd := &host.WatchedDirs[i]
 			if err := wd.validateAndSetDefaultsWatchedDir(); err != nil {
-				return fmt.Errorf("host %s, WatchedDir %s: %w", name, wd.Name, err)
+				return fmt.Errorf("host %s, WatchedDir %s: %w", host.Name, wd.Name, err)
 			}
 		}
 
 		for i := range host.RecursiveDirs {
 			wd := &host.RecursiveDirs[i]
 			if err := wd.validateAndSetDefaultsRecursiveWatchedDir(); err != nil {
-				return fmt.Errorf("host %s, RecursiveWatchedDir %s: %w", name, wd.Path, err)
+				return fmt.Errorf("host %s, RecursiveWatchedDir %s: %w", host.Name, wd.Path, err)
 			}
 		}
 
@@ -101,7 +106,7 @@ func (c *Config) validateAndSetDefaultsSshHostConfig() error {
 			host.FilesystemMetrics = &b
 		}
 
-		c.Hosts[name] = host
+		c.Hosts[index] = host
 	}
 	return nil
 }
