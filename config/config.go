@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/viper"
 )
@@ -23,15 +24,17 @@ type RecursiveWatchedDirs struct {
 }
 
 type SshHostConfig struct {
-	Name              string                 `mapstructure:"name"`
-	Host              string                 `mapstructure:"host"`
-	Port              int                    `mapstructure:"port"`
-	User              string                 `mapstructure:"user"`
-	Password          string                 `mapstructure:"password"`
-	PrivateKey        string                 `mapstructure:"privateKey"`
-	FilesystemMetrics *bool                  `mapstructure:"filesystem_metrics"`
-	WatchedDirs       []WatchedDir           `mapstructure:"watched_dirs"`
-	RecursiveDirs     []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
+	Name                 string                 `mapstructure:"name"`
+	Host                 string                 `mapstructure:"host"`
+	Port                 int                    `mapstructure:"port"`
+	User                 string                 `mapstructure:"user"`
+	Password             string                 `mapstructure:"password"`
+	PrivateKey           string                 `mapstructure:"privateKey"`
+	PrivateKeyFile       string                 `mapstructure:"privateKeyFile"`
+	PrivateKeyPassphrase string                 `mapstructure:"privateKeyPassphrase"`
+	FilesystemMetrics    *bool                  `mapstructure:"filesystem_metrics"`
+	WatchedDirs          []WatchedDir           `mapstructure:"watched_dirs"`
+	RecursiveDirs        []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
 }
 
 type Config struct {
@@ -83,8 +86,24 @@ func (c *Config) validateAndSetDefaultsSshHostConfig() error {
 			return fmt.Errorf("ssh.user für Host %s fehlt", host.Name)
 		}
 
-		if host.Password == "" && host.PrivateKey == "" {
-			return fmt.Errorf("entweder Password oder PrivateKey muss gesetzt sein für Host %s", host.Name)
+		hasAuth := false
+
+		if host.Password != "" {
+			hasAuth = true
+		}
+
+		if host.PrivateKey != "" && host.PrivateKeyFile == "" {
+			// Has private key
+			hasAuth = true
+		}
+
+		if host.PrivateKey == "" && host.PrivateKeyFile != "" {
+			// Has a private key file
+			hasAuth = true
+		}
+
+		if !hasAuth {
+			log.Fatal("No auth method set for host")
 		}
 
 		for i := range host.WatchedDirs {
