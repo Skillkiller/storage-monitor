@@ -214,23 +214,28 @@ func getRecursiveDirectories(client *ssh2.Client, dirConfig config.RecursiveWatc
 	return watchedDirs
 }
 
+// listDirs führt den SSH-Befehl aus und delegiert das Parsen an parseLsOutput
 func listDirs(client *ssh2.Client, path string) ([]string, error) {
 	output, err := ssh.ExecuteSshCommand(client, "ls -l "+path)
 	if err != nil {
 		return nil, err
 	}
+	return parseLsOutput(string(output), path), nil
+}
 
+// parseLsOutput parst die Ausgabe von "ls -l" und gibt nur Verzeichnisse zurück.
+// Diese Funktion ist unabhängig von SSH und kann in Unit Tests getestet werden.
+func parseLsOutput(output string, basePath string) []string {
 	var dirs []string
-	lines := strings.Split(string(output), "\n")
+	lines := strings.Split(output, "\n")
 	for _, line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) < 9 {
 			continue
 		}
-		// Zeilen von `ls -l` die mit "d" anfangen sind Verzeichnisse
 		if strings.HasPrefix(fields[0], "d") {
-			dirs = append(dirs, path+"/"+fields[len(fields)-1])
+			dirs = append(dirs, basePath+"/"+fields[len(fields)-1])
 		}
 	}
-	return dirs, nil
+	return dirs
 }
