@@ -25,7 +25,11 @@ type Config struct {
 	RecursiveDirs []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
 }
 
-func Load() (*Config, error) {
+type InternalConfig struct {
+	RecursiveDirs []RecursiveWatchedDirs
+}
+
+func Load() (*InternalConfig, error) {
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
@@ -45,13 +49,37 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("konnte Config nicht mappen: %w", err)
 	}
 
-	if err := cfg.validateConfig(); err != nil {
+	internalCfg, err := cfg.validateAndConvertConfig()
+	if err != nil {
 		return nil, err
 	}
 
-	return &cfg, nil
+	return internalCfg, nil
 }
 
-func (c *Config) validateConfig() error {
-	return nil
+func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
+	var recursiveDirs []RecursiveWatchedDirs
+
+	// WatchedDirs -> RecursiveDirs
+	for _, d := range c.WatchedDirs {
+		recursiveDirs = append(recursiveDirs, RecursiveWatchedDirs{
+			MaxDepth:     0,
+			Path:         d.Path,
+			FolderSize:   d.FolderSize,
+			LastModified: d.LastModified,
+		})
+	}
+
+	// Copy RecursiveDirs
+	for _, d := range c.RecursiveDirs {
+		recursiveDirs = append(recursiveDirs, d)
+	}
+
+	// Todo config validation
+
+	internal := &InternalConfig{
+		RecursiveDirs: recursiveDirs,
+	}
+
+	return internal, nil
 }

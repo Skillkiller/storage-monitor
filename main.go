@@ -16,7 +16,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if len(cfg.RecursiveDirs)+len(cfg.WatchedDirs) == 0 {
+	if len(cfg.RecursiveDirs) == 0 {
 		log.Fatal("Keine watched dirs angegeben")
 	}
 
