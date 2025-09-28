@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"ssh-storage-monitor/collectors"
 	"ssh-storage-monitor/config"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -20,9 +22,9 @@ func main() {
 		log.Fatal("Keine watched dirs angegeben")
 	}
 
-	//for _, host := range cfg.Hosts {
-	//	prometheus.MustRegister(collectors.NewSshCollector(host))
-	//}
+	for _, dirs := range cfg.RecursiveDirs {
+		prometheus.MustRegister(collectors.NewRcloneCollector(dirs))
+	}
 
 	fmt.Printf("%+v\n", cfg)
 

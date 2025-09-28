@@ -7,18 +7,17 @@ import (
 )
 
 type RcloneCollector struct {
-	config config.Config
+	recursiveWatchedDirs config.RecursiveWatchedDirs
 }
 
 func (c *RcloneCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
-
 }
 
-func NewRcloneCollector(config config.Config) *RcloneCollector {
+func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDirs) *RcloneCollector {
 	return &RcloneCollector{
-		config: config,
+		recursiveWatchedDirs: recursiveWatchedDirs,
 	}
 }
