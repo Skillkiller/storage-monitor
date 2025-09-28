@@ -1,16 +1,9 @@
-hosts:
-  server1:
-    host: "localhost"
-    port: 2222
-    user: "dev"
-    password: "password"
-    filesystem_metrics: false
-    watched_dirs:
-      - name: "logs"
-        path: "/tmp"
-      - name: "tmp"
-        path: "/tmp"
-        inode-count: false
-  recursive_watched_dirs:
-    - path: "/home"
-      max-depth: 1
+recursive_watched_dirs:
+  - path: "/home"
+    max-depth: 1
+
+watched_dirs:
+  - name: "logs"
+    path: "/tmp"
+  - name: "tmp"
+    path: "/tmp"

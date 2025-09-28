@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/viper"
 )
@@ -10,7 +9,6 @@ import (
 type WatchedDir struct {
 	Name         string `mapstructure:"name"`
 	Path         string `mapstructure:"path"`
-	InodeCount   *bool  `mapstructure:"inode-count"`
 	FolderSize   *bool  `mapstructure:"folder-size"`
 	LastModified *bool  `mapstructure:"last-modified"`
 }
@@ -18,27 +16,13 @@ type WatchedDir struct {
 type RecursiveWatchedDirs struct {
 	MaxDepth     int    `mapstructure:"max-depth"`
 	Path         string `mapstructure:"path"`
-	InodeCount   *bool  `mapstructure:"inode-count"`
 	FolderSize   *bool  `mapstructure:"folder-size"`
 	LastModified *bool  `mapstructure:"last-modified"`
 }
 
-type SshHostConfig struct {
-	Name                 string                 `mapstructure:"name"`
-	Host                 string                 `mapstructure:"host"`
-	Port                 int                    `mapstructure:"port"`
-	User                 string                 `mapstructure:"user"`
-	Password             string                 `mapstructure:"password"`
-	PrivateKey           string                 `mapstructure:"privateKey"`
-	PrivateKeyFile       string                 `mapstructure:"privateKeyFile"`
-	PrivateKeyPassphrase string                 `mapstructure:"privateKeyPassphrase"`
-	FilesystemMetrics    *bool                  `mapstructure:"filesystem_metrics"`
-	WatchedDirs          []WatchedDir           `mapstructure:"watched_dirs"`
-	RecursiveDirs        []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
-}
-
 type Config struct {
-	Hosts []SshHostConfig `mapstructure:"hosts"`
+	WatchedDirs   []WatchedDir           `mapstructure:"watched_dirs"`
+	RecursiveDirs []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
 }
 
 func Load() (*Config, error) {
@@ -61,118 +45,13 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("konnte Config nicht mappen: %w", err)
 	}
 
-	if err := cfg.validateAndSetDefaultsSshHostConfig(); err != nil {
+	if err := cfg.validateConfig(); err != nil {
 		return nil, err
 	}
 
 	return &cfg, nil
 }
 
-func (c *Config) validateAndSetDefaultsSshHostConfig() error {
-	for index, host := range c.Hosts {
-		if host.Name == "" {
-			return fmt.Errorf("name must be set on host config")
-		}
-
-		// Default Port
-		if host.Port == 0 {
-			host.Port = 22
-		}
-
-		if host.Host == "" {
-			return fmt.Errorf("ssh.host für Host %s fehlt", host.Name)
-		}
-		if host.User == "" {
-			return fmt.Errorf("ssh.user für Host %s fehlt", host.Name)
-		}
-
-		hasAuth := false
-
-		if host.Password != "" {
-			hasAuth = true
-		}
-
-		if host.PrivateKey != "" && host.PrivateKeyFile == "" {
-			// Has private key
-			hasAuth = true
-		}
-
-		if host.PrivateKey == "" && host.PrivateKeyFile != "" {
-			// Has a private key file
-			hasAuth = true
-		}
-
-		if !hasAuth {
-			log.Fatal("No auth method set for host")
-		}
-
-		for i := range host.WatchedDirs {
-			wd := &host.WatchedDirs[i]
-			if err := wd.validateAndSetDefaultsWatchedDir(); err != nil {
-				return fmt.Errorf("host %s, WatchedDir %s: %w", host.Name, wd.Name, err)
-			}
-		}
-
-		for i := range host.RecursiveDirs {
-			wd := &host.RecursiveDirs[i]
-			if err := wd.validateAndSetDefaultsRecursiveWatchedDir(); err != nil {
-				return fmt.Errorf("host %s, RecursiveWatchedDir %s: %w", host.Name, wd.Path, err)
-			}
-		}
-
-		if host.FilesystemMetrics == nil {
-			b := true
-			host.FilesystemMetrics = &b
-		}
-
-		c.Hosts[index] = host
-	}
-	return nil
-}
-
-func (wd *WatchedDir) validateAndSetDefaultsWatchedDir() error {
-	if wd.Path == "" {
-		return fmt.Errorf("pfad darf nicht leer sein")
-	}
-	if wd.Name == "" {
-		wd.Name = wd.Path
-	}
-
-	if wd.InodeCount == nil {
-		b := true
-		wd.InodeCount = &b
-	}
-
-	if wd.FolderSize == nil {
-		b := true
-		wd.FolderSize = &b
-	}
-
-	if wd.LastModified == nil {
-		b := true
-		wd.LastModified = &b
-	}
-	return nil
-}
-
-func (wd *RecursiveWatchedDirs) validateAndSetDefaultsRecursiveWatchedDir() error {
-	if wd.Path == "" {
-		return fmt.Errorf("pfad darf nicht leer sein")
-	}
-
-	if wd.InodeCount == nil {
-		b := true
-		wd.InodeCount = &b
-	}
-
-	if wd.FolderSize == nil {
-		b := true
-		wd.FolderSize = &b
-	}
-
-	if wd.LastModified == nil {
-		b := true
-		wd.LastModified = &b
-	}
+func (c *Config) validateConfig() error {
 	return nil
 }
