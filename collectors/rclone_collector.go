@@ -58,9 +58,13 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		var modTime time.Time
 		var parseErr error
 		if !f.IsDir {
-			modTime, parseErr = time.Parse(time.RFC3339Nano, f.ModTime)
-			if parseErr != nil {
-				fmt.Printf("Warnung: Konnte Datum nicht parsen '%s': %v\n", f.ModTime, parseErr)
+			if *c.recursiveWatchedDirs.LastModified {
+				modTime, parseErr = time.Parse(time.RFC3339Nano, f.ModTime)
+				if parseErr != nil {
+					fmt.Printf("Warnung: Konnte Datum nicht parsen '%s': %v\n", f.ModTime, parseErr)
+					continue
+				}
+			} else {
 				continue
 			}
 		}
