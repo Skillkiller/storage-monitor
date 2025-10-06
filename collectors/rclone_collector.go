@@ -34,7 +34,13 @@ func (c *RcloneCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
-	cmd := exec.Command("rclone", "lsjson", c.recursiveWatchedDirs.Path, "--recursive", "--no-mimetype", "--no-modtime")
+	args := []string{"lsjson", c.recursiveWatchedDirs.Path, "--recursive", "--no-mimetype"}
+
+	if !*c.recursiveWatchedDirs.LastModified {
+		args = append(args, "--no-modtime")
+	}
+
+	cmd := exec.Command("rclone", args...)
 
 	out, err := cmd.Output()
 	if err != nil {
