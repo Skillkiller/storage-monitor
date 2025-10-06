@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"sort"
 	"ssh-storage-monitor/config"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -72,7 +73,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		currentPath := f.Path
 
 		for {
-			parentDir := filepath.Dir(currentPath)
+			parentDir := path.Dir(currentPath)
 
 			if parentDir == "." || parentDir == currentPath {
 				break
@@ -105,6 +106,9 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 
 	fmt.Println("--- Berechnete Ordner-Statistiken ---")
 	for _, path := range sortedPaths {
+		if pathDepth(path) > c.recursiveWatchedDirs.MaxDepth-1 {
+			continue
+		}
 		stats := folderStats[path]
 
 		lastModStr := "N/A"
@@ -114,6 +118,11 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 
 		fmt.Printf("Ordner: %-40s | Objekte: %-10d | Größe: %-15d | Letzte Änderung: %s\n", path, stats.ObjectCount, stats.TotalSize, lastModStr)
 	}
+}
+
+func pathDepth(pathS string) int {
+	clean := path.Clean(pathS)
+	return strings.Count(clean, "/")
 }
 
 func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDirs) *RcloneCollector {
