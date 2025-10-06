@@ -75,11 +75,31 @@ func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
 		recursiveDirs = append(recursiveDirs, d)
 	}
 
-	// Todo config validation
+	for i := range recursiveDirs {
+		if err := recursiveDirs[i].setDefaultsAndValidate(); err != nil {
+			return nil, err
+		}
+	}
 
 	internal := &InternalConfig{
 		RecursiveDirs: recursiveDirs,
 	}
 
 	return internal, nil
+}
+
+func (rc *RecursiveWatchedDirs) setDefaultsAndValidate() error {
+	if rc.Path == "" {
+		return fmt.Errorf("path darf nicht leer sein")
+	}
+
+	if rc.FolderSize == nil {
+		def := false
+		rc.FolderSize = &def
+	}
+	if rc.LastModified == nil {
+		def := false
+		rc.LastModified = &def
+	}
+	return nil
 }
