@@ -21,12 +21,14 @@ type RecursiveWatchedDirs struct {
 }
 
 type Config struct {
-	WatchedDirs   []WatchedDir           `mapstructure:"watched_dirs"`
-	RecursiveDirs []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
+	WatchedDirs          []WatchedDir           `mapstructure:"watched_dirs"`
+	RecursiveDirs        []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
+	RcloneExecutablePath string                 `mapstructure:"rclone_executable_path"`
 }
 
 type InternalConfig struct {
-	RecursiveDirs []RecursiveWatchedDirs
+	RecursiveDirs        []RecursiveWatchedDirs
+	RcloneExecutablePath string `mapstructure:"rclone_executable_path"`
 }
 
 func Load() (*InternalConfig, error) {
@@ -81,8 +83,15 @@ func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
 		}
 	}
 
+	RcloneExecutablePath := c.RcloneExecutablePath
+
+	if RcloneExecutablePath == "" {
+		RcloneExecutablePath = "rclone"
+	}
+
 	internal := &InternalConfig{
-		RecursiveDirs: recursiveDirs,
+		RecursiveDirs:        recursiveDirs,
+		RcloneExecutablePath: RcloneExecutablePath,
 	}
 
 	return internal, nil
