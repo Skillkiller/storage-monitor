@@ -1,3 +1,5 @@
+rclone_executable_path: rclone
+
 recursive_watched_dirs:
   - path: "/home"
     max-depth: 1
