@@ -23,7 +23,7 @@ func main() {
 	}
 
 	for _, dirs := range cfg.RecursiveDirs {
-		prometheus.MustRegister(collectors.NewRcloneCollector(dirs))
+		prometheus.MustRegister(collectors.NewRcloneCollector(dirs, cfg.RcloneExecutablePath))
 	}
 
 	fmt.Printf("%+v\n", cfg)

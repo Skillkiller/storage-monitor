@@ -15,6 +15,7 @@ import (
 
 type RcloneCollector struct {
 	recursiveWatchedDirs config.RecursiveWatchedDirs
+	rcloneExecutablePath string
 }
 
 type FileInfo struct {
@@ -41,7 +42,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		args = append(args, "--no-modtime")
 	}
 
-	cmd := exec.Command("rclone", args...)
+	cmd := exec.Command(c.rcloneExecutablePath, args...)
 
 	out, err := cmd.Output()
 	if err != nil {
@@ -125,8 +126,9 @@ func pathDepth(pathS string) int {
 	return strings.Count(clean, "/")
 }
 
-func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDirs) *RcloneCollector {
+func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDirs, rcloneExecutablePath string) *RcloneCollector {
 	return &RcloneCollector{
 		recursiveWatchedDirs: recursiveWatchedDirs,
+		rcloneExecutablePath: rcloneExecutablePath,
 	}
 }
