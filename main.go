@@ -26,7 +26,6 @@ func main() {
 		log.Fatal("Keine watched dirs angegeben")
 	}
 
-	// TODO check rclone executable is executable
 	version, err := getRcloneVersion(cfg.RcloneExecutablePath)
 	if err != nil {
 		log.Fatal(err)
