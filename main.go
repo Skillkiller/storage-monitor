@@ -30,7 +30,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Rclone Version: %s\n", version)
+
+	setRcloneInfoMetric(version, cfg)
 
 	for _, dirs := range cfg.RecursiveDirs {
 		prometheus.MustRegister(collectors.NewRcloneCollector(dirs, cfg.RcloneExecutablePath))
@@ -40,6 +41,19 @@ func main() {
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.ListenAndServe(":2112", nil)
+}
+
+func setRcloneInfoMetric(version string, cfg *config.InternalConfig) {
+	rcloneVersion := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rclone_info",
+			Help: "Rclone executable information",
+		},
+		[]string{"version", "executablePath"},
+	)
+
+	prometheus.MustRegister(rcloneVersion)
+	rcloneVersion.WithLabelValues(version, cfg.RcloneExecutablePath).Set(1)
 }
 
 func getRcloneVersion(rcloneExecutablePath string) (string, error) {
