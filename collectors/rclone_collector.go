@@ -14,8 +14,11 @@ import (
 )
 
 type RcloneCollector struct {
-	recursiveWatchedDirs config.RecursiveWatchedDirs
-	rcloneExecutablePath string
+	recursiveWatchedDirs   config.RecursiveWatchedDirs
+	rcloneExecutablePath   string
+	folderObjectCountDesc  *prometheus.Desc
+	folderSizeDesc         *prometheus.Desc
+	folderLastModifiedDesc *prometheus.Desc
 }
 
 type FileInfo struct {
@@ -33,6 +36,9 @@ type FolderStats struct {
 }
 
 func (c *RcloneCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.folderObjectCountDesc
+	ch <- c.folderSizeDesc
+	ch <- c.folderLastModifiedDesc
 }
 
 func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
@@ -119,20 +125,20 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 
 		fmt.Printf("Ordner: %-40s | Objekte: %-10d | Größe: %-15d | Letzte Änderung: %s\n", path, stats.ObjectCount, stats.TotalSize, lastModStr)
 
-		ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("folder_object_count", "Number of objects (files and subfolders) in the given folder", []string{"path"}, nil),
+		ch <- prometheus.MustNewConstMetric(c.folderObjectCountDesc,
 			prometheus.GaugeValue,
 			float64(stats.ObjectCount),
 			path)
 
 		if *c.recursiveWatchedDirs.FolderSize {
-			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("folder_size", "Total size of all objects in the folder in bytes", []string{"path"}, nil),
+			ch <- prometheus.MustNewConstMetric(c.folderSizeDesc,
 				prometheus.GaugeValue,
 				float64(stats.TotalSize),
 				path)
 		}
 
 		if *c.recursiveWatchedDirs.LastModified && stats.LastModified != nil {
-			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("folder_last_modified_time", "Unix timestamp of the most recent modification among all objects in the folder", []string{"path"}, nil),
+			ch <- prometheus.MustNewConstMetric(c.folderLastModifiedDesc,
 				prometheus.GaugeValue,
 				float64(stats.LastModified.Unix()),
 				path)
@@ -147,7 +153,10 @@ func pathDepth(pathS string) int {
 
 func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDirs, rcloneExecutablePath string) *RcloneCollector {
 	return &RcloneCollector{
-		recursiveWatchedDirs: recursiveWatchedDirs,
-		rcloneExecutablePath: rcloneExecutablePath,
+		recursiveWatchedDirs:   recursiveWatchedDirs,
+		rcloneExecutablePath:   rcloneExecutablePath,
+		folderObjectCountDesc:  prometheus.NewDesc("folder_object_count", "Number of objects (files and subfolders) in the given folder", []string{"path"}, nil),
+		folderSizeDesc:         prometheus.NewDesc("folder_size", "Total size of all objects in the folder in bytes", []string{"path"}, nil),
+		folderLastModifiedDesc: prometheus.NewDesc("folder_last_modified_time", "Unix timestamp of the most recent modification among all objects in the folder", []string{"path"}, nil),
 	}
 }
