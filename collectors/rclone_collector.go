@@ -118,6 +118,13 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		fmt.Printf("Ordner: %-40s | Objekte: %-10d | Größe: %-15d | Letzte Änderung: %s\n", path, stats.ObjectCount, stats.TotalSize, lastModStr)
+
+		if *c.recursiveWatchedDirs.LastModified && stats.LastModified != nil {
+			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("folder_last_modified_time", "time of last data modification in unix seconds", []string{"path"}, nil),
+				prometheus.GaugeValue,
+				float64(stats.LastModified.Unix()),
+				path)
+		}
 	}
 }
 
