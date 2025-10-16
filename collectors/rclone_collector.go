@@ -124,6 +124,13 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 			float64(stats.ObjectCount),
 			path)
 
+		if *c.recursiveWatchedDirs.FolderSize {
+			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("folder_size", "", []string{"path"}, nil),
+				prometheus.GaugeValue,
+				float64(stats.TotalSize),
+				path)
+		}
+
 		if *c.recursiveWatchedDirs.LastModified && stats.LastModified != nil {
 			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("folder_last_modified_time", "time of last data modification in unix seconds", []string{"path"}, nil),
 				prometheus.GaugeValue,
