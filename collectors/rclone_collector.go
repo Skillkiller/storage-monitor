@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
-	"sort"
 	"ssh-storage-monitor/config"
 	"strings"
 	"time"
@@ -105,25 +104,11 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
-	sortedPaths := make([]string, 0, len(folderStats))
 	for path := range folderStats {
-		sortedPaths = append(sortedPaths, path)
-	}
-	sort.Strings(sortedPaths)
-
-	fmt.Println("--- Berechnete Ordner-Statistiken ---")
-	for _, path := range sortedPaths {
 		if pathDepth(path) > c.recursiveWatchedDir.MaxDepth-1 {
 			continue
 		}
 		stats := folderStats[path]
-
-		lastModStr := "N/A"
-		if stats.LastModified != nil {
-			lastModStr = stats.LastModified.Format("2006-01-02 15:04:05")
-		}
-
-		fmt.Printf("Ordner: %-40s | Objekte: %-10d | Größe: %-15d | Letzte Änderung: %s\n", path, stats.ObjectCount, stats.TotalSize, lastModStr)
 
 		ch <- prometheus.MustNewConstMetric(c.folderObjectCountDesc,
 			prometheus.GaugeValue,
