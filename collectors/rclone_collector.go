@@ -36,9 +36,9 @@ type FolderStats struct {
 }
 
 func (c *RcloneCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.folderObjectCountDesc
-	ch <- c.folderSizeDesc
-	ch <- c.folderLastModifiedDesc
+	//ch <- c.folderObjectCountDesc
+	//ch <- c.folderSizeDesc
+	//ch <- c.folderLastModifiedDesc
 }
 
 func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
