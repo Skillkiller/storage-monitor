@@ -14,6 +14,7 @@ type WatchedDir struct {
 }
 
 type RecursiveWatchedDirs struct {
+	Name         string `mapstructure:"name"`
 	MaxDepth     int    `mapstructure:"max-depth"`
 	Path         string `mapstructure:"path"`
 	FolderSize   *bool  `mapstructure:"folder-size"`
@@ -65,6 +66,7 @@ func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
 	// WatchedDirs -> RecursiveDirs
 	for _, d := range c.WatchedDirs {
 		recursiveDirs = append(recursiveDirs, RecursiveWatchedDirs{
+			Name:         d.Name,
 			MaxDepth:     0,
 			Path:         d.Path,
 			FolderSize:   d.FolderSize,
@@ -98,6 +100,10 @@ func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
 }
 
 func (rc *RecursiveWatchedDirs) setDefaultsAndValidate() error {
+	if rc.Name == "" {
+		return fmt.Errorf("name darf nicht leer sein")
+	}
+
 	if rc.Path == "" {
 		return fmt.Errorf("path darf nicht leer sein")
 	}

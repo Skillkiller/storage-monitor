@@ -128,12 +128,14 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.folderObjectCountDesc,
 			prometheus.GaugeValue,
 			float64(stats.ObjectCount),
+			c.recursiveWatchedDirs.Name,
 			path)
 
 		if *c.recursiveWatchedDirs.FolderSize {
 			ch <- prometheus.MustNewConstMetric(c.folderSizeDesc,
 				prometheus.GaugeValue,
 				float64(stats.TotalSize),
+				c.recursiveWatchedDirs.Name,
 				path)
 		}
 
@@ -141,6 +143,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(c.folderLastModifiedDesc,
 				prometheus.GaugeValue,
 				float64(stats.LastModified.Unix()),
+				c.recursiveWatchedDirs.Name,
 				path)
 		}
 	}
@@ -155,8 +158,8 @@ func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDirs, rclone
 	return &RcloneCollector{
 		recursiveWatchedDirs:   recursiveWatchedDirs,
 		rcloneExecutablePath:   rcloneExecutablePath,
-		folderObjectCountDesc:  prometheus.NewDesc("folder_object_count", "Number of objects (files and subfolders) in the given folder", []string{"path"}, nil),
-		folderSizeDesc:         prometheus.NewDesc("folder_size", "Total size of all objects in the folder in bytes", []string{"path"}, nil),
-		folderLastModifiedDesc: prometheus.NewDesc("folder_last_modified_time", "Unix timestamp of the most recent modification among all objects in the folder", []string{"path"}, nil),
+		folderObjectCountDesc:  prometheus.NewDesc("folder_object_count", "Number of objects (files and subfolders) in the given folder", []string{"name", "path"}, nil),
+		folderSizeDesc:         prometheus.NewDesc("folder_size", "Total size of all objects in the folder in bytes", []string{"name", "path"}, nil),
+		folderLastModifiedDesc: prometheus.NewDesc("folder_last_modified_time", "Unix timestamp of the most recent modification among all objects in the folder", []string{"name", "path"}, nil),
 	}
 }
