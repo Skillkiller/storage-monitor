@@ -13,7 +13,7 @@ type WatchedDir struct {
 	LastModified *bool  `mapstructure:"last-modified"`
 }
 
-type RecursiveWatchedDirs struct {
+type RecursiveWatchedDir struct {
 	Name         string `mapstructure:"name"`
 	MaxDepth     int    `mapstructure:"max-depth"`
 	Path         string `mapstructure:"path"`
@@ -22,13 +22,13 @@ type RecursiveWatchedDirs struct {
 }
 
 type Config struct {
-	WatchedDirs          []WatchedDir           `mapstructure:"watched_dirs"`
-	RecursiveDirs        []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
-	RcloneExecutablePath string                 `mapstructure:"rclone_executable_path"`
+	WatchedDirs          []WatchedDir          `mapstructure:"watched_dirs"`
+	RecursiveDirs        []RecursiveWatchedDir `mapstructure:"recursive_watched_dirs"`
+	RcloneExecutablePath string                `mapstructure:"rclone_executable_path"`
 }
 
 type InternalConfig struct {
-	RecursiveDirs        []RecursiveWatchedDirs
+	RecursiveDirs        []RecursiveWatchedDir
 	RcloneExecutablePath string `mapstructure:"rclone_executable_path"`
 }
 
@@ -61,11 +61,11 @@ func Load() (*InternalConfig, error) {
 }
 
 func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
-	var recursiveDirs []RecursiveWatchedDirs
+	var recursiveDirs []RecursiveWatchedDir
 
 	// WatchedDirs -> RecursiveDirs
 	for _, d := range c.WatchedDirs {
-		recursiveDirs = append(recursiveDirs, RecursiveWatchedDirs{
+		recursiveDirs = append(recursiveDirs, RecursiveWatchedDir{
 			Name:         d.Name,
 			MaxDepth:     0,
 			Path:         d.Path,
@@ -99,7 +99,7 @@ func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
 	return internal, nil
 }
 
-func (rc *RecursiveWatchedDirs) setDefaultsAndValidate() error {
+func (rc *RecursiveWatchedDir) setDefaultsAndValidate() error {
 	if rc.Name == "" {
 		return fmt.Errorf("name darf nicht leer sein")
 	}

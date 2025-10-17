@@ -14,7 +14,7 @@ import (
 )
 
 type RcloneCollector struct {
-	recursiveWatchedDirs   config.RecursiveWatchedDirs
+	recursiveWatchedDir    config.RecursiveWatchedDir
 	rcloneExecutablePath   string
 	folderObjectCountDesc  *prometheus.Desc
 	folderSizeDesc         *prometheus.Desc
@@ -42,9 +42,9 @@ func (c *RcloneCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
-	args := []string{"lsjson", c.recursiveWatchedDirs.Path, "--recursive", "--no-mimetype"}
+	args := []string{"lsjson", c.recursiveWatchedDir.Path, "--recursive", "--no-mimetype"}
 
-	if !*c.recursiveWatchedDirs.LastModified {
+	if !*c.recursiveWatchedDir.LastModified {
 		args = append(args, "--no-modtime")
 	}
 
@@ -66,7 +66,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		var modTime time.Time
 		var parseErr error
 		if !f.IsDir {
-			if *c.recursiveWatchedDirs.LastModified {
+			if *c.recursiveWatchedDir.LastModified {
 				modTime, parseErr = time.Parse(time.RFC3339Nano, f.ModTime)
 				if parseErr != nil {
 					fmt.Printf("Warnung: Konnte Datum nicht parsen '%s': %v\n", f.ModTime, parseErr)
@@ -113,7 +113,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 
 	fmt.Println("--- Berechnete Ordner-Statistiken ---")
 	for _, path := range sortedPaths {
-		if pathDepth(path) > c.recursiveWatchedDirs.MaxDepth-1 {
+		if pathDepth(path) > c.recursiveWatchedDir.MaxDepth-1 {
 			continue
 		}
 		stats := folderStats[path]
@@ -128,22 +128,22 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.folderObjectCountDesc,
 			prometheus.GaugeValue,
 			float64(stats.ObjectCount),
-			c.recursiveWatchedDirs.Name,
+			c.recursiveWatchedDir.Name,
 			path)
 
-		if *c.recursiveWatchedDirs.FolderSize {
+		if *c.recursiveWatchedDir.FolderSize {
 			ch <- prometheus.MustNewConstMetric(c.folderSizeDesc,
 				prometheus.GaugeValue,
 				float64(stats.TotalSize),
-				c.recursiveWatchedDirs.Name,
+				c.recursiveWatchedDir.Name,
 				path)
 		}
 
-		if *c.recursiveWatchedDirs.LastModified && stats.LastModified != nil {
+		if *c.recursiveWatchedDir.LastModified && stats.LastModified != nil {
 			ch <- prometheus.MustNewConstMetric(c.folderLastModifiedDesc,
 				prometheus.GaugeValue,
 				float64(stats.LastModified.Unix()),
-				c.recursiveWatchedDirs.Name,
+				c.recursiveWatchedDir.Name,
 				path)
 		}
 	}
@@ -154,9 +154,9 @@ func pathDepth(pathS string) int {
 	return strings.Count(clean, "/")
 }
 
-func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDirs, rcloneExecutablePath string) *RcloneCollector {
+func NewRcloneCollector(recursiveWatchedDirs config.RecursiveWatchedDir, rcloneExecutablePath string) *RcloneCollector {
 	return &RcloneCollector{
-		recursiveWatchedDirs:   recursiveWatchedDirs,
+		recursiveWatchedDir:    recursiveWatchedDirs,
 		rcloneExecutablePath:   rcloneExecutablePath,
 		folderObjectCountDesc:  prometheus.NewDesc("folder_object_count", "Number of objects (files and subfolders) in the given folder", []string{"name", "path"}, nil),
 		folderSizeDesc:         prometheus.NewDesc("folder_size", "Total size of all objects in the folder in bytes", []string{"name", "path"}, nil),
