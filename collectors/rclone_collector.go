@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path"
+	pathlib "path"
 	"ssh-storage-monitor/config"
 	"strings"
 	"time"
@@ -79,7 +79,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 		currentPath := f.Path
 
 		for {
-			parentDir := path.Dir(currentPath)
+			parentDir := pathlib.Dir(currentPath)
 
 			if parentDir == "." || parentDir == currentPath {
 				break
@@ -135,7 +135,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func pathDepth(pathS string) int {
-	clean := path.Clean(pathS)
+	clean := pathlib.Clean(pathS)
 	return strings.Count(clean, "/")
 }
 
