@@ -73,8 +73,6 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 					fmt.Printf("Warnung: Konnte Datum nicht parsen '%s': %v\n", f.ModTime, parseErr)
 					continue
 				}
-			} else {
-				continue
 			}
 		}
 
