@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"ssh-storage-monitor/collectors"
@@ -12,29 +11,40 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
+	log.Println("Starting Rclone Prometheus Exporter...")
 
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	if len(cfg.RecursiveDirs) == 0 {
-		log.Fatal("Keine watched dirs angegeben")
+		log.Fatal("No directories configured to watch. Exiting.")
 	}
+
+	log.Printf("Loaded configuration: %+v", cfg)
 
 	version, err := getRcloneVersion(cfg.RcloneExecutablePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to get rclone version from '%s': %v", cfg.RcloneExecutablePath, err)
 	}
+	log.Printf("Detected rclone version: %s", version)
 
 	setRcloneInfoMetric(version, cfg)
+	log.Println("Rclone info metric registered")
 
-	for _, dirs := range cfg.RecursiveDirs {
-		prometheus.MustRegister(collectors.NewRcloneCollector(dirs, cfg.RcloneExecutablePath))
+	// Register collectors
+	for _, dir := range cfg.RecursiveDirs {
+		log.Printf("Registering collector for directory: %s", dir.Name)
+		prometheus.MustRegister(collectors.NewRcloneCollector(dir, cfg.RcloneExecutablePath))
 	}
 
-	fmt.Printf("%+v\n", cfg)
+	addr := ":2112"
+	log.Printf("Starting metrics HTTP server on %s ...", addr)
 
 	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":2112", nil)
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		log.Fatalf("HTTP server failed: %v", err)
+	}
 }
