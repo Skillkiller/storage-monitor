@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/viper"
 )
@@ -10,38 +9,30 @@ import (
 type WatchedDir struct {
 	Name         string `mapstructure:"name"`
 	Path         string `mapstructure:"path"`
-	InodeCount   *bool  `mapstructure:"inode-count"`
 	FolderSize   *bool  `mapstructure:"folder-size"`
 	LastModified *bool  `mapstructure:"last-modified"`
 }
 
-type RecursiveWatchedDirs struct {
+type RecursiveWatchedDir struct {
+	Name         string `mapstructure:"name"`
 	MaxDepth     int    `mapstructure:"max-depth"`
 	Path         string `mapstructure:"path"`
-	InodeCount   *bool  `mapstructure:"inode-count"`
 	FolderSize   *bool  `mapstructure:"folder-size"`
 	LastModified *bool  `mapstructure:"last-modified"`
-}
-
-type SshHostConfig struct {
-	Name                 string                 `mapstructure:"name"`
-	Host                 string                 `mapstructure:"host"`
-	Port                 int                    `mapstructure:"port"`
-	User                 string                 `mapstructure:"user"`
-	Password             string                 `mapstructure:"password"`
-	PrivateKey           string                 `mapstructure:"privateKey"`
-	PrivateKeyFile       string                 `mapstructure:"privateKeyFile"`
-	PrivateKeyPassphrase string                 `mapstructure:"privateKeyPassphrase"`
-	FilesystemMetrics    *bool                  `mapstructure:"filesystem_metrics"`
-	WatchedDirs          []WatchedDir           `mapstructure:"watched_dirs"`
-	RecursiveDirs        []RecursiveWatchedDirs `mapstructure:"recursive_watched_dirs"`
 }
 
 type Config struct {
-	Hosts []SshHostConfig `mapstructure:"hosts"`
+	WatchedDirs          []WatchedDir          `mapstructure:"watched_dirs"`
+	RecursiveDirs        []RecursiveWatchedDir `mapstructure:"recursive_watched_dirs"`
+	RcloneExecutablePath string                `mapstructure:"rclone_executable_path"`
 }
 
-func Load() (*Config, error) {
+type InternalConfig struct {
+	RecursiveDirs        []RecursiveWatchedDir
+	RcloneExecutablePath string `mapstructure:"rclone_executable_path"`
+}
+
+func Load() (*InternalConfig, error) {
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
@@ -61,118 +52,69 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("konnte Config nicht mappen: %w", err)
 	}
 
-	if err := cfg.validateAndSetDefaultsSshHostConfig(); err != nil {
+	internalCfg, err := cfg.validateAndConvertConfig()
+	if err != nil {
 		return nil, err
 	}
 
-	return &cfg, nil
+	return internalCfg, nil
 }
 
-func (c *Config) validateAndSetDefaultsSshHostConfig() error {
-	for index, host := range c.Hosts {
-		if host.Name == "" {
-			return fmt.Errorf("name must be set on host config")
-		}
+func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
+	var recursiveDirs []RecursiveWatchedDir
 
-		// Default Port
-		if host.Port == 0 {
-			host.Port = 22
-		}
-
-		if host.Host == "" {
-			return fmt.Errorf("ssh.host für Host %s fehlt", host.Name)
-		}
-		if host.User == "" {
-			return fmt.Errorf("ssh.user für Host %s fehlt", host.Name)
-		}
-
-		hasAuth := false
-
-		if host.Password != "" {
-			hasAuth = true
-		}
-
-		if host.PrivateKey != "" && host.PrivateKeyFile == "" {
-			// Has private key
-			hasAuth = true
-		}
-
-		if host.PrivateKey == "" && host.PrivateKeyFile != "" {
-			// Has a private key file
-			hasAuth = true
-		}
-
-		if !hasAuth {
-			log.Fatal("No auth method set for host")
-		}
-
-		for i := range host.WatchedDirs {
-			wd := &host.WatchedDirs[i]
-			if err := wd.validateAndSetDefaultsWatchedDir(); err != nil {
-				return fmt.Errorf("host %s, WatchedDir %s: %w", host.Name, wd.Name, err)
-			}
-		}
-
-		for i := range host.RecursiveDirs {
-			wd := &host.RecursiveDirs[i]
-			if err := wd.validateAndSetDefaultsRecursiveWatchedDir(); err != nil {
-				return fmt.Errorf("host %s, RecursiveWatchedDir %s: %w", host.Name, wd.Path, err)
-			}
-		}
-
-		if host.FilesystemMetrics == nil {
-			b := true
-			host.FilesystemMetrics = &b
-		}
-
-		c.Hosts[index] = host
+	// WatchedDirs -> RecursiveDirs
+	for _, d := range c.WatchedDirs {
+		recursiveDirs = append(recursiveDirs, RecursiveWatchedDir{
+			Name:         d.Name,
+			MaxDepth:     0,
+			Path:         d.Path,
+			FolderSize:   d.FolderSize,
+			LastModified: d.LastModified,
+		})
 	}
-	return nil
+
+	// Copy RecursiveDirs
+	for _, d := range c.RecursiveDirs {
+		recursiveDirs = append(recursiveDirs, d)
+	}
+
+	for i := range recursiveDirs {
+		if err := recursiveDirs[i].setDefaultsAndValidate(); err != nil {
+			return nil, err
+		}
+	}
+
+	RcloneExecutablePath := c.RcloneExecutablePath
+
+	if RcloneExecutablePath == "" {
+		RcloneExecutablePath = "rclone"
+	}
+
+	internal := &InternalConfig{
+		RecursiveDirs:        recursiveDirs,
+		RcloneExecutablePath: RcloneExecutablePath,
+	}
+
+	return internal, nil
 }
 
-func (wd *WatchedDir) validateAndSetDefaultsWatchedDir() error {
-	if wd.Path == "" {
-		return fmt.Errorf("pfad darf nicht leer sein")
-	}
-	if wd.Name == "" {
-		wd.Name = wd.Path
+func (rc *RecursiveWatchedDir) setDefaultsAndValidate() error {
+	if rc.Name == "" {
+		return fmt.Errorf("name darf nicht leer sein")
 	}
 
-	if wd.InodeCount == nil {
-		b := true
-		wd.InodeCount = &b
+	if rc.Path == "" {
+		return fmt.Errorf("path darf nicht leer sein")
 	}
 
-	if wd.FolderSize == nil {
-		b := true
-		wd.FolderSize = &b
+	if rc.FolderSize == nil {
+		def := false
+		rc.FolderSize = &def
 	}
-
-	if wd.LastModified == nil {
-		b := true
-		wd.LastModified = &b
-	}
-	return nil
-}
-
-func (wd *RecursiveWatchedDirs) validateAndSetDefaultsRecursiveWatchedDir() error {
-	if wd.Path == "" {
-		return fmt.Errorf("pfad darf nicht leer sein")
-	}
-
-	if wd.InodeCount == nil {
-		b := true
-		wd.InodeCount = &b
-	}
-
-	if wd.FolderSize == nil {
-		b := true
-		wd.FolderSize = &b
-	}
-
-	if wd.LastModified == nil {
-		b := true
-		wd.LastModified = &b
+	if rc.LastModified == nil {
+		def := false
+		rc.LastModified = &def
 	}
 	return nil
 }

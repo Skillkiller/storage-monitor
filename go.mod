@@ -1,4 +1,4 @@
-module ssh-storage-monitor
+module storage-monitor
 
 go 1.24.0
 

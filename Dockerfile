@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -7,11 +7,11 @@ COPY . .
 
 RUN go test ./...
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ssh-storage-monitor
+RUN CGO_ENABLED=0 go build -o storage-monitor .
 
 
 FROM alpine
 WORKDIR /app
-COPY --from=builder /app/ssh-storage-monitor /app/ssh-storage-monitor
+COPY --from=builder /app/storage-monitor /app/storage-monitor
 
-ENTRYPOINT ["/app/ssh-storage-monitor"]
+ENTRYPOINT ["/app/storage-monitor"]
