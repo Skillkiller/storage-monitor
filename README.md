@@ -1,4 +1,4 @@
-# ssh-storage-monitor
+# storage-monitor
 
 A lightweight Go-based tool for monitoring disk usage on remote targets via rclone.
 

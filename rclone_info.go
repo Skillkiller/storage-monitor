@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"ssh-storage-monitor/config"
+	"storage-monitor/config"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"

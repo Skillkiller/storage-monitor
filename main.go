@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
-	"ssh-storage-monitor/collectors"
-	"ssh-storage-monitor/config"
+	"storage-monitor/collectors"
+	"storage-monitor/config"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

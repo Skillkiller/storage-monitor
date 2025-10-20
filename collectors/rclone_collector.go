@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	pathlib "path"
-	"ssh-storage-monitor/config"
+	"storage-monitor/config"
 	"strings"
 	"time"
 
