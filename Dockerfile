@@ -12,6 +12,8 @@ RUN CGO_ENABLED=0 go build -o storage-monitor .
 
 FROM alpine
 WORKDIR /app
+
+RUN apk add rclone
 COPY --from=builder /app/storage-monitor /app/storage-monitor
 
 ENTRYPOINT ["/app/storage-monitor"]
