@@ -24,10 +24,19 @@ func setRcloneInfoMetric(version string, cfg *config.InternalConfig) {
 	rcloneVersion.WithLabelValues(version, cfg.RcloneExecutablePath).Set(1)
 }
 
-func getRcloneVersion(rcloneExecutablePath string) (string, error) {
-	cmd := exec.Command(rcloneExecutablePath, "version")
+type CommandExecutor func(name string, arg ...string) ([]byte, error)
 
-	out, err := cmd.Output()
+var execCommandExecutor CommandExecutor = func(name string, arg ...string) ([]byte, error) {
+	cmd := exec.Command(name, arg...)
+	return cmd.Output()
+}
+
+func getRcloneVersion(rcloneExecutablePath string) (string, error) {
+	return getRcloneVersionWithExecutor(rcloneExecutablePath, execCommandExecutor)
+}
+
+func getRcloneVersionWithExecutor(rcloneExecutablePath string, cmdExecutor CommandExecutor) (string, error) {
+	out, err := cmdExecutor(rcloneExecutablePath, "version")
 
 	if err != nil {
 		var exitErr *exec.ExitError
