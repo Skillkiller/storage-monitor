@@ -66,13 +66,11 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, f := range files {
 		var modTime time.Time
 		var parseErr error
-		if !f.IsDir {
-			if *c.recursiveWatchedDir.LastModified {
-				modTime, parseErr = time.Parse(time.RFC3339Nano, f.ModTime)
-				if parseErr != nil {
-					fmt.Printf("Warnung: Konnte Datum nicht parsen '%s': %v\n", f.ModTime, parseErr)
-					continue
-				}
+		if *c.recursiveWatchedDir.LastModified {
+			modTime, parseErr = time.Parse(time.RFC3339Nano, f.ModTime)
+			if parseErr != nil {
+				fmt.Printf("Warnung: Konnte Datum nicht parsen '%s': %v\n", f.ModTime, parseErr)
+				continue
 			}
 		}
 
@@ -93,11 +91,9 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 
 			stats.ObjectCount++
 
-			if !f.IsDir {
-				stats.TotalSize += f.Size
-				if stats.LastModified == nil || modTime.After(*stats.LastModified) {
-					stats.LastModified = &modTime
-				}
+			stats.TotalSize += f.Size
+			if stats.LastModified == nil || modTime.After(*stats.LastModified) {
+				stats.LastModified = &modTime
 			}
 
 			currentPath = parentDir
