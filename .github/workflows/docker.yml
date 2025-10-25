@@ -11,6 +11,11 @@ on:
       - master
   workflow_dispatch:  
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_type == 'tag' && 'tags' || github.ref_name }}
+  cancel-in-progress: false
+
+
 permissions:
   contents: read
 
