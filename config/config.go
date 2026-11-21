@@ -45,8 +45,9 @@ func Load() (*InternalConfig, error) {
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
 
-	viper.SetEnvPrefix("ssm")
-	viper.AutomaticEnv()
+	v.SetEnvPrefix("ssm")
+	v.AutomaticEnv()
+	_ = v.BindEnv("rclone_executable_path")
 
 	// Datei einlesen
 	if err := v.ReadInConfig(); err != nil {

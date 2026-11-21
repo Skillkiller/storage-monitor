@@ -39,3 +39,15 @@ func TestValidateAndConvertConfig_AboutTargetsValidationErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestLoad_EnvOverride(t *testing.T) {
+	t.Setenv("SSM_RCLONE_EXECUTABLE_PATH", "/custom/rclone")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if cfg.RcloneExecutablePath != "/custom/rclone" {
+		t.Errorf("expected RcloneExecutablePath %q, got %q", "/custom/rclone", cfg.RcloneExecutablePath)
+	}
+}
