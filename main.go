@@ -18,8 +18,8 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	if len(cfg.RecursiveDirs) == 0 {
-		log.Fatal("No directories configured to watch. Exiting.")
+	if len(cfg.RecursiveDirs) == 0 && len(cfg.AboutTargets) == 0 {
+		log.Fatal("No directories or about targets configured to watch. Exiting.")
 	}
 
 	log.Printf("Loaded configuration: %+v", cfg)
@@ -37,6 +37,11 @@ func main() {
 	for _, dir := range cfg.RecursiveDirs {
 		log.Printf("Registering collector for directory: %s", dir.Name)
 		prometheus.MustRegister(collectors.NewRcloneCollector(dir, cfg.RcloneExecutablePath))
+	}
+
+	for _, target := range cfg.AboutTargets {
+		log.Printf("Registering about collector for remote: %s (%s)", target.Name, target.Remote)
+		prometheus.MustRegister(collectors.NewRcloneAboutCollector(target, cfg.RcloneExecutablePath))
 	}
 
 	addr := ":2112"

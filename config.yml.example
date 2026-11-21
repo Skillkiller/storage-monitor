@@ -1,7 +1,12 @@
 rclone_executable_path: rclone
 
+about_targets:
+  - name: "gdrive"
+    remote: "gdrive:"
+
 recursive_watched_dirs:
-  - path: "/home"
+  - name: "home"
+    path: "/home"
     max-depth: 1
 
 watched_dirs:

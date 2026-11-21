@@ -21,14 +21,21 @@ type RecursiveWatchedDir struct {
 	LastModified *bool  `mapstructure:"last-modified"`
 }
 
+type AboutTarget struct {
+	Name   string `mapstructure:"name"`
+	Remote string `mapstructure:"remote"`
+}
+
 type Config struct {
 	WatchedDirs          []WatchedDir          `mapstructure:"watched_dirs"`
 	RecursiveDirs        []RecursiveWatchedDir `mapstructure:"recursive_watched_dirs"`
+	AboutTargets         []AboutTarget         `mapstructure:"about_targets"`
 	RcloneExecutablePath string                `mapstructure:"rclone_executable_path"`
 }
 
 type InternalConfig struct {
 	RecursiveDirs        []RecursiveWatchedDir
+	AboutTargets         []AboutTarget
 	RcloneExecutablePath string `mapstructure:"rclone_executable_path"`
 }
 
@@ -85,6 +92,12 @@ func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
 		}
 	}
 
+	for _, target := range c.AboutTargets {
+		if err := target.validate(); err != nil {
+			return nil, err
+		}
+	}
+
 	RcloneExecutablePath := c.RcloneExecutablePath
 
 	if RcloneExecutablePath == "" {
@@ -93,10 +106,21 @@ func (c *Config) validateAndConvertConfig() (*InternalConfig, error) {
 
 	internal := &InternalConfig{
 		RecursiveDirs:        recursiveDirs,
+		AboutTargets:         c.AboutTargets,
 		RcloneExecutablePath: RcloneExecutablePath,
 	}
 
 	return internal, nil
+}
+
+func (a *AboutTarget) validate() error {
+	if a.Name == "" {
+		return fmt.Errorf("about_targets name darf nicht leer sein")
+	}
+	if a.Remote == "" {
+		return fmt.Errorf("about_targets remote darf nicht leer sein")
+	}
+	return nil
 }
 
 func (rc *RecursiveWatchedDir) setDefaultsAndValidate() error {
