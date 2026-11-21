@@ -59,6 +59,7 @@ func (c *RcloneCollector) Collect(ch chan<- prometheus.Metric) {
 	var files []FileInfo
 	if err := json.Unmarshal(out, &files); err != nil {
 		sendError(c, ch)
+		return
 	}
 
 	folderStats := make(map[string]*FolderStats)
