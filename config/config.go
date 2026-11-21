@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -41,9 +42,15 @@ type InternalConfig struct {
 
 func Load() (*InternalConfig, error) {
 	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
+
+	configPath := os.Getenv("SSM_CONFIG_PATH")
+	if configPath != "" {
+		v.SetConfigFile(configPath)
+	} else {
+		v.SetConfigName("config")
+		v.SetConfigType("yaml")
+		v.AddConfigPath(".")
+	}
 
 	v.SetEnvPrefix("ssm")
 	v.AutomaticEnv()
@@ -51,6 +58,9 @@ func Load() (*InternalConfig, error) {
 
 	// Datei einlesen
 	if err := v.ReadInConfig(); err != nil {
+		if configPath != "" {
+			return nil, fmt.Errorf("konnte Config '%s' nicht laden: %w", configPath, err)
+		}
 		// config.yaml optional, nur Warnung
 		fmt.Println("Keine config.yaml gefunden, nur ENV wird genutzt")
 	}
