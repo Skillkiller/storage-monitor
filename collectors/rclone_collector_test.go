@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -109,7 +110,10 @@ func TestRcloneCollector_InvalidJSONReturnsSingleUpZero(t *testing.T) {
 watched_folder_up{name="broken"} 0
 `
 
-	if err := testutil.CollectAndCompare(collector, strings.NewReader(expected)); err != nil {
+	reg := prometheus.NewPedanticRegistry()
+	reg.MustRegister(collector)
+
+	if err := testutil.GatherAndCompare(reg, strings.NewReader(expected)); err != nil {
 		t.Fatalf("unexpected metrics output: %v", err)
 	}
 }
